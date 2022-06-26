@@ -379,7 +379,22 @@ open class BarChartRenderer: BarLineScatterCandleBubbleRenderer
                 context.setFillColor(dataSet.color(atIndex: j).cgColor)
             }
             
-            context.fill(barRect)
+            
+            if dataSet.roundedCorners.isEmpty == false {
+                if isStacked {
+                    guard (j + 1) % stackSize == 0 else {
+                        context.fill(barRect)
+                        continue
+                    }
+                }
+                let path = UIBezierPath(roundedRect: barRect,
+                                        byRoundingCorners: dataSet.roundedCorners,
+                                        cornerRadii: CGSize(width: barRect.width / 2, height: barRect.width / 2))
+                context.addPath(path.cgPath)
+                context.fillPath()
+            } else {
+                context.fill(barRect)
+            }
             
             if drawBorder
             {
@@ -406,6 +421,22 @@ open class BarChartRenderer: BarLineScatterCandleBubbleRenderer
         }
     }
     
+    private func findTopRectInBar(barRects: [CGRect], firstIndexInBar: Int, lastIndexInBar: Int) -> CGRect {
+        var topRectInBar = barRects[firstIndexInBar]
+        if barRects[lastIndexInBar].origin.y < topRectInBar.origin.y {
+            topRectInBar = barRects[lastIndexInBar]
+        }
+        
+        var height: CGFloat = 0
+        for index in firstIndexInBar...lastIndexInBar {
+            height += barRects[index].height
+        }
+        
+        topRectInBar.size.height = height
+        
+        return topRectInBar
+    }
+
     open func prepareBarHighlight(
         x: Double,
           y1: Double,
@@ -719,32 +750,40 @@ open class BarChartRenderer: BarLineScatterCandleBubbleRenderer
                 let y1: Double
                 let y2: Double
                 
-                if isStack
-                {
-                    if dataProvider.isHighlightFullBarEnabled
-                    {
-                        y1 = e.positiveSum
-                        y2 = -e.negativeSum
-                    }
-                    else
-                    {
-                        let range = e.ranges?[high.stackIndex]
-                        
-                        y1 = range?.from ?? 0.0
-                        y2 = range?.to ?? 0.0
-                    }
-                }
-                else
-                {
+//                if isStack
+//                {
+//                    if dataProvider.isHighlightFullBarEnabled
+//                    {
+//                        y1 = e.positiveSum
+//                        y2 = -e.negativeSum
+//                    }
+//                    else
+//                    {
+//                        let range = e.ranges?[high.stackIndex]
+//
+//                        y1 = range?.from ?? 0.0
+//                        y2 = range?.to ?? 0.0
+//                    }
+//                }
+//                else
+//                {
                     y1 = e.y
                     y2 = 0.0
-                }
+//                }
                 
                 prepareBarHighlight(x: e.x, y1: y1, y2: y2, barWidthHalf: barData.barWidth / 2.0, trans: trans, rect: &barRect)
                 
                 setHighlightDrawPos(highlight: high, barRect: barRect)
                 
-                context.fill(barRect)
+                if set.roundedCorners.isEmpty == false {
+                    let path = UIBezierPath(roundedRect: barRect,
+                                            byRoundingCorners: set.roundedCorners,
+                                            cornerRadii: CGSize(width: barRect.width / 2, height: barRect.width / 2))
+                    context.addPath(path.cgPath)
+                    context.fillPath()
+                } else {
+                    context.fill(barRect)
+                }
             }
         }
     }
