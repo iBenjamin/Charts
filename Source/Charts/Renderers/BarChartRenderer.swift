@@ -368,6 +368,7 @@ open class BarChartRenderer: BarLineScatterCandleBubbleRenderer
 
         for j in buffer.indices
         {
+            context.saveGState()
             let barRect = buffer[j]
             
             guard viewPortHandler.isInBoundsLeft(barRect.origin.x + barRect.size.width) else { continue }
@@ -381,17 +382,24 @@ open class BarChartRenderer: BarLineScatterCandleBubbleRenderer
             
             
             if dataSet.roundedCorners.isEmpty == false {
+                let rect: CGRect
                 if isStacked {
                     guard (j + 1) % stackSize == 0 else {
                         context.fill(barRect)
                         continue
                     }
+                    rect = findTopRectInBar(barRects: buffer, firstIndexInBar: 0, lastIndexInBar: j)
+                } else {
+                    rect = barRect
                 }
-                let path = UIBezierPath(roundedRect: barRect,
+                
+                let path = UIBezierPath(roundedRect: rect,
                                         byRoundingCorners: dataSet.roundedCorners,
                                         cornerRadii: CGSize(width: barRect.width / 2, height: barRect.width / 2))
                 context.addPath(path.cgPath)
-                context.fillPath()
+                context.clip()
+//                context.fillPath()
+                context.fill(barRect)
             } else {
                 context.fill(barRect)
             }
@@ -418,6 +426,7 @@ open class BarChartRenderer: BarLineScatterCandleBubbleRenderer
 
                 accessibilityOrderedElements[j/stackSize].append(element)
             }
+            context.restoreGState()
         }
     }
     
